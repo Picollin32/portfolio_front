@@ -25,25 +25,25 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AuthProvider()), ChangeNotifierProvider(create: (_) => MediaProvider())],
-      child: EnvironmentBanner(
-        // Altere para true se quiser ver o debug info no canto da tela
-        showDebugInfo: false,
-        child: MaterialApp(
-          title: 'Meu Portfólio',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.darkTheme,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const SplashScreen(),
-            '/login': (context) => const LoginScreen(),
-            '/register': (context) => const RegisterScreen(),
-            '/portfolio': (context) => const PortfolioScreen(),
-            '/admin': (context) => const AdminScreen(),
-            '/jogos': (context) => const CategoryPlaceholder(title: 'Jogos'),
-            '/filmes': (context) => const CategoryPlaceholder(title: 'Filmes'),
-            '/series': (context) => const CategoryPlaceholder(title: 'Séries'),
-          },
-        ),
+      child: MaterialApp(
+        title: 'Meu Portfólio',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/portfolio': (context) => const PortfolioScreen(),
+          '/admin': (context) => const AdminScreen(),
+          '/jogos': (context) => const CategoryPlaceholder(title: 'Jogos'),
+          '/filmes': (context) => const CategoryPlaceholder(title: 'Filmes'),
+          '/series': (context) => const CategoryPlaceholder(title: 'Séries'),
+        },
+        // EnvironmentBanner agora dentro do builder
+        builder: (context, child) {
+          return EnvironmentBanner(showDebugInfo: false, child: child ?? const SizedBox.shrink());
+        },
       ),
     );
   }

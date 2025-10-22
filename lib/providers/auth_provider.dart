@@ -2,9 +2,31 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
-import '../utils/api_service.dart';
+import '../services/api_facade.dart';
+import '../services/auth_strategy.dart';
 
+/// Observer Pattern + Singleton Pattern: Gerenciamento de autenticação
+///
+/// Esta classe implementa:
+/// 1. Observer Pattern (ChangeNotifier) - notifica widgets sobre mudanças
+/// 2. Singleton Pattern - garante uma única instância do serviço
+/// 3. Strategy Pattern - diferentes métodos de login intercambiáveis
 class AuthProvider with ChangeNotifier {
+  // Singleton instance
+  static final AuthProvider _instance = AuthProvider._internal();
+
+  factory AuthProvider() {
+    return _instance;
+  }
+
+  AuthProvider._internal() {
+    _loadUser();
+  }
+
+  // ========================================
+  // State Management
+  // ========================================
+
   User? _user;
   String? _token;
   bool _isLoading = true;
@@ -15,9 +37,45 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null && _token != null;
   bool get isAdmin => _user?.role == UserRole.admin;
 
-  AuthProvider() {
-    _loadUser();
+  // ========================================
+  // Strategy Pattern: Login Strategies
+  // ========================================
+
+  late final LoginStrategy _loginStrategy;
+  final ApiFacade _apiFacade = ApiFacade();
+
+  /// Define a estratégia de login a ser usada
+  void setLoginStrategy(LoginStrategy strategy) {
+    _loginStrategy = strategy;
   }
+
+  /// Login usando a estratégia definida
+  Future<bool> loginWithStrategy(Map<String, dynamic> credentials) async {
+    try {
+      final result = await _loginStrategy.login(credentials);
+
+      if (result.success && result.data != null) {
+        _user = result.data!.user;
+        _token = result.data!.token;
+
+        await _saveUser(_user!);
+        await _saveToken(_token!);
+
+        // Observer Pattern: notifica observers
+        notifyListeners();
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('Login error: $e');
+      return false;
+    }
+  }
+
+  // ========================================
+  // Authentication Methods
+  // ========================================
 
   Future<void> _loadUser() async {
     try {
@@ -42,66 +100,29 @@ class AuthProvider with ChangeNotifier {
       print('🔑 AuthProvider.login() chamado');
       print('📧 Email: $email');
 
-      // Tenta fazer login via API
-      final result = await ApiService.login(email: email, password: password);
+      // Usa ApiFacade para simplificar a chamada
+      final result = await _apiFacade.login(email: email, password: password);
 
-      print('📦 Resultado da API: $result');
+      if (result.success && result.data != null) {
+        _user = result.data!.user;
+        _token = result.data!.token;
 
-      if (result['success'] == true) {
-        final token = result['data']['access_token'] as String;
-        print('🎫 Token recebido: ${token.substring(0, 20)}...');
+        await _saveUser(_user!);
+        await _saveToken(_token!);
 
-        // Decodifica o token JWT para obter as informações do usuário
-        final payload = ApiService.decodeJwtPayload(token);
-        print('📝 Payload decodificado: $payload');
-
-        if (payload != null) {
-          final userEmail = payload['sub'] as String;
-          final userRole = payload['role'] as String;
-
-          print('👤 Usuário: $userEmail, Role: $userRole');
-
-          // Cria o objeto do usuário
-          final userData = User(
-            id: userEmail, // Usando email como ID temporariamente
-            email: userEmail,
-            name: userRole == 'admin' ? 'Administrador' : 'Usuário',
-            role: userRole == 'admin' ? UserRole.admin : UserRole.user,
-          );
-
-          _user = userData;
-          _token = token;
-
-          // Salva no SharedPreferences
-          await _saveUser(userData);
-          await _saveToken(token);
-
-          print('✅ Login bem-sucedido!');
-          notifyListeners();
-          return true;
-        }
+        print('✅ Login bem-sucedido!');
+        notifyListeners(); // Observer Pattern: notifica observers
+        return true;
       }
 
       print('❌ Login falhou');
       return false;
     } catch (e) {
       debugPrint('❌ Login error: $e');
-      print('🐛 Stack trace:');
-      print(e);
 
-      // Fallback para login local (admin apenas) se API não estiver disponível
-      if (email == 'admin@portfolio.com' && password == 'admin123') {
-        print('🔄 Usando fallback local para admin');
-        final userData = User(id: 'admin', email: email, name: 'Administrador', role: UserRole.admin);
-        _user = userData;
-        _token = 'local-admin-token';
-        await _saveUser(userData);
-        await _saveToken('local-admin-token');
-        notifyListeners();
-        return true;
-      }
-
-      return false;
+      // Fallback para login local usando Strategy Pattern
+      setLoginStrategy(LoginStrategyFactory.create(LoginType.local));
+      return await loginWithStrategy({'email': email, 'password': password});
     }
   }
 
@@ -110,8 +131,8 @@ class AuthProvider with ChangeNotifier {
       print('📝 AuthProvider.register() chamado');
       print('📧 Email: ${registerData.email}');
 
-      // Tenta fazer registro via API
-      final result = await ApiService.register(
+      // Usa ApiFacade para simplificar a chamada
+      final result = await _apiFacade.register(
         email: registerData.email,
         password: registerData.password,
         firstName: registerData.firstName,
@@ -119,15 +140,12 @@ class AuthProvider with ChangeNotifier {
         photo: registerData.photo,
       );
 
-      print('📦 Resultado da API: $result');
-
-      if (result['success'] == true) {
+      if (result.success) {
         print('✅ Registro bem-sucedido!');
         return {'success': true};
       } else {
-        final errorMessage = result['error'] ?? 'Erro ao cadastrar usuário';
-        print('❌ Registro falhou: $errorMessage');
-        return {'success': false, 'error': errorMessage};
+        print('❌ Registro falhou: ${result.error}');
+        return {'success': false, 'error': result.error};
       }
     } catch (e) {
       print('❌ Erro no registro: $e');
@@ -245,25 +263,12 @@ class AuthProvider with ChangeNotifier {
     try {
       print('👥 AuthProvider.getAllUsers() chamado');
 
-      // Tenta buscar usuários via API
-      final result = await ApiService.getAllUsers(_token!);
+      // Usa ApiFacade para simplificar a chamada
+      final result = await _apiFacade.getAllUsers(_token!);
 
-      if (result['success'] == true) {
-        final List<dynamic> usersData = result['data'];
-        print('✅ ${usersData.length} usuários recebidos da API');
-
-        return usersData.map((userData) {
-          // Converte o formato do backend para o formato do modelo
-          return User(
-            id: userData['id'].toString(),
-            email: userData['email'],
-            name: userData['full_name'] ?? 'Sem nome',
-            firstName: userData['full_name']?.split(' ').first,
-            lastName: userData['full_name']?.split(' ').skip(1).join(' '),
-            photo: userData['profile_image_url'],
-            role: userData['role']['name'] == 'admin' ? UserRole.admin : UserRole.user,
-          );
-        }).toList();
+      if (result.success && result.data != null) {
+        print('✅ ${result.data!.length} usuários recebidos da API');
+        return result.data!;
       }
 
       print('⚠️ Falha na API, usando fallback local');
@@ -311,14 +316,14 @@ class AuthProvider with ChangeNotifier {
       // Tenta deletar via API
       final userIdInt = int.tryParse(userId);
       if (userIdInt != null) {
-        final result = await ApiService.deleteUser(token: _token!, userId: userIdInt);
+        final result = await _apiFacade.deleteUser(token: _token!, userId: userIdInt);
 
-        if (result['success'] == true) {
+        if (result.success) {
           print('✅ Usuário deletado via API');
           return {'success': true};
         }
 
-        print('⚠️ Falha na API: ${result['error']}');
+        print('⚠️ Falha na API: ${result.error}');
       }
     } catch (e) {
       print('❌ Erro ao deletar via API: $e');
@@ -363,7 +368,7 @@ class AuthProvider with ChangeNotifier {
           fullName = updates['full_name'];
         }
 
-        final result = await ApiService.updateUser(
+        final result = await _apiFacade.updateUser(
           token: _token!,
           userId: userIdInt,
           fullName: fullName,
@@ -371,12 +376,12 @@ class AuthProvider with ChangeNotifier {
           password: updates['password'],
         );
 
-        if (result['success'] == true) {
+        if (result.success) {
           print('✅ Usuário atualizado via API');
           return {'success': true};
         }
 
-        print('⚠️ Falha na API: ${result['error']}');
+        print('⚠️ Falha na API: ${result.error}');
       }
     } catch (e) {
       print('❌ Erro ao atualizar via API: $e');
