@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io' show File;
+import 'dart:typed_data' show Uint8List;
+import 'dart:convert' show base64Decode, base64Encode;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:convert';
+import 'package:image/image.dart' as img;
 import '../models/media_item_model.dart';
+import '../utils/api_service.dart';
 
 class MediaFormDialog extends StatefulWidget {
   final MediaItem? media;
@@ -22,9 +25,13 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
   final _imageController = TextEditingController();
 
   MediaType? _selectedType;
-  int _rating = 0;
+  double _rating = 0.0;
   String _selectedBadge = 'Nenhum';
   bool _isLoading = false;
+  bool _ratingTouched = false; // Controla se o usuário já interagiu com avaliação
+
+  // Opções dinâmicas da API
+  List<String> _statusOptions = ['Nenhum'];
 
   @override
   void initState() {
@@ -38,6 +45,75 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
       _rating = widget.media!.rating;
       _selectedBadge = widget.media!.badge ?? 'Nenhum';
     }
+    // Carrega opções de status se já tiver tipo selecionado
+    if (_selectedType != null) {
+      _loadStatusOptions();
+    }
+  }
+
+  Future<void> _loadStatusOptions() async {
+    if (_selectedType == null) return;
+
+    final tipo = _typeToString(_selectedType!);
+    try {
+      final result = await ApiService.getStatusPorTipo(tipo);
+      if (result['success'] == true && mounted) {
+        setState(() {
+          final List<dynamic> data = result['data'];
+          if (data.isNotEmpty) {
+            _statusOptions = ['Nenhum', ...data.map((e) => e.toString())];
+          } else {
+            // Se API retornar vazio, usa fallback
+            _statusOptions = _getStaticBadgeOptions();
+          }
+
+          // Se o status atual não está nas opções, adiciona
+          if (_selectedBadge != 'Nenhum' && !_statusOptions.contains(_selectedBadge)) {
+            _statusOptions.add(_selectedBadge);
+          }
+        });
+      } else {
+        // Se API falhar, usa fallback estático
+        if (mounted) {
+          setState(() {
+            _statusOptions = _getStaticBadgeOptions();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar status: $e');
+      // Em caso de erro, usa fallback estático
+      if (mounted) {
+        setState(() {
+          _statusOptions = _getStaticBadgeOptions();
+        });
+      }
+    }
+  }
+
+  List<String> _getStaticBadgeOptions() {
+    // Opções estáticas de fallback baseadas nos mockados originais
+    switch (_selectedType) {
+      case MediaType.game:
+        return ['Nenhum', 'Zerado', 'Platinado', 'Abandonado', 'Jogando', 'Em andamento'];
+      case MediaType.movie:
+        return ['Nenhum', 'Assistido', 'Favorito', 'Para Reassistir'];
+      case MediaType.series:
+        return ['Nenhum', 'Finalizada', 'Assistindo', 'Pausada', 'Abandonada'];
+      default:
+        return ['Nenhum'];
+    }
+  }
+
+  String _typeToString(MediaType type) {
+    switch (type) {
+      case MediaType.game:
+        return 'Jogo';
+      case MediaType.movie:
+        return 'Filme';
+      case MediaType.series:
+        return 'Série';
+    }
   }
 
   @override
@@ -50,64 +126,93 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
   }
 
   List<String> _getBadgeOptions() {
-    switch (_selectedType) {
-      case MediaType.game:
-        return ['Nenhum', 'Zerado', 'Platinado', 'Abandonado', 'Jogando'];
-      case MediaType.movie:
-        return ['Nenhum', 'Assistido', 'Favorito', 'Para Reassistir'];
-      case MediaType.series:
-        return ['Nenhum', 'Finalizada', 'Assistindo', 'Pausada', 'Abandonada'];
-      default:
-        return ['Nenhum'];
+    // Retorna as opções carregadas da API ou fallback para opções estáticas
+    if (_statusOptions.length > 1) {
+      return _statusOptions;
     }
+
+    // Se ainda não carregou da API, retorna fallback estático
+    return _getStaticBadgeOptions();
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione o tipo de mídia')));
+    // Valida avaliação antes do form
+    if (_rating == 0.0) {
+      setState(() {
+        _ratingTouched = true; // Marca para mostrar erro
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Selecione uma avaliação')));
       return;
     }
-    if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione uma avaliação')));
+
+    // Valida o formulário
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Preencha todos os campos obrigatórios')));
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implementar chamadas para API quando endpoints estiverem prontos
-
-      // ignore: unused_local_variable
-      final mediaData = {
-        'title': _titleController.text.trim(),
-        'genre': _genreController.text.trim(),
-        'year': int.parse(_yearController.text.trim()),
-        'image': _imageController.text.trim(),
-        'type': _selectedType!.name,
-        'rating': _rating,
-        'badge': _selectedBadge == 'Nenhum' ? null : _selectedBadge,
-      };
-
-      // Placeholder - apenas mostra sucesso por enquanto
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (widget.media == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mídia criada com sucesso!')));
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mídia atualizada com sucesso!')));
-        }
+      // Converte MediaType para string em português
+      String tipoString;
+      switch (_selectedType!) {
+        case MediaType.game:
+          tipoString = 'Jogo';
+          break;
+        case MediaType.movie:
+          tipoString = 'Filme';
+          break;
+        case MediaType.series:
+          tipoString = 'Série';
+          break;
       }
 
-      if (mounted) {
-        Navigator.of(context).pop(true);
+      if (widget.media == null) {
+        // CRIAR nova mídia
+        final result = await ApiService.createMidia(
+          titulo: _titleController.text.trim(),
+          tipo: tipoString,
+          genero: _genreController.text.trim().isNotEmpty ? _genreController.text.trim() : null,
+          ano: _yearController.text.trim().isNotEmpty ? int.tryParse(_yearController.text.trim()) : null,
+          status: _selectedBadge != 'Nenhum' ? _selectedBadge : null,
+          avaliacao: _rating,
+          capa: _imageController.text.trim().isNotEmpty ? _imageController.text.trim() : null,
+        );
+
+        if (result['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Mídia criada com sucesso!')));
+            Navigator.of(context).pop(true); // Retorna true para indicar sucesso
+          }
+        } else {
+          throw Exception(result['error'] ?? 'Erro ao criar mídia');
+        }
+      } else {
+        // ATUALIZAR mídia existente
+        final result = await ApiService.updateMidia(
+          midiaId: widget.media!.id,
+          titulo: _titleController.text.trim(),
+          tipo: tipoString,
+          genero: _genreController.text.trim().isNotEmpty ? _genreController.text.trim() : null,
+          ano: _yearController.text.trim().isNotEmpty ? int.tryParse(_yearController.text.trim()) : null,
+          status: _selectedBadge != 'Nenhum' ? _selectedBadge : null,
+          avaliacao: _rating,
+          capa: _imageController.text.trim().isNotEmpty ? _imageController.text.trim() : null,
+        );
+
+        if (result['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Mídia atualizada com sucesso!')));
+            Navigator.of(context).pop(true); // Retorna true para indicar sucesso
+          }
+        } else {
+          throw Exception(result['error'] ?? 'Erro ao atualizar mídia');
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erro: $e')));
       }
     } finally {
       if (mounted) {
@@ -118,37 +223,102 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
 
   Future<void> _pickLocalFile() async {
     try {
-      debugPrint('Abrindo FilePicker...');
-      final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
-      debugPrint('FilePicker result: $result');
+      debugPrint('🖼️ Abrindo FilePicker...');
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true, // Precisa dos bytes para converter em base64
+        withReadStream: false,
+      );
+
+      debugPrint('📁 FilePicker result: ${result != null ? "Arquivo selecionado" : "Nenhum arquivo"}');
+
       if (result != null && result.files.isNotEmpty) {
         final picked = result.files.single;
-        // On web and some platforms `path` can be null. Use bytes -> data URI as fallback.
-        if (picked.path != null && picked.path!.isNotEmpty) {
-          setState(() {
-            _imageController.text = picked.path!;
-          });
-        } else if (picked.bytes != null) {
-          final bytes = picked.bytes!;
-          final base64Data = base64Encode(bytes);
-          final mime = picked.extension != null ? 'image/${picked.extension}' : 'image/jpeg';
-          final dataUri = 'data:$mime;base64,$base64Data';
+        final fileName = picked.name;
+        final fileSize = picked.size;
+
+        debugPrint('Arquivo: $fileName');
+        debugPrint('Tamanho original: ${(fileSize / 1024).toStringAsFixed(1)} KB');
+
+        // Obter bytes da imagem
+        final bytes = picked.bytes;
+        if (bytes == null) {
+          throw Exception('Não foi possível ler os dados da imagem');
+        }
+
+        // Mostrar loading enquanto processa
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('⏳ Comprimindo "$fileName"...'), duration: const Duration(seconds: 2)));
+        }
+
+        // Comprimir e converter para base64
+        final compressedBytes = await _compressImage(bytes);
+        final base64String = base64Encode(compressedBytes);
+        final extension = picked.extension?.toLowerCase() ?? 'jpeg';
+        final mimeType = 'image/$extension';
+        final dataUri = 'data:$mimeType;base64,$base64String';
+
+        final compressedSize = compressedBytes.length;
+        final compressionRate = ((1 - compressedSize / fileSize) * 100).toStringAsFixed(1);
+
+        debugPrint('Tamanho comprimido: ${(compressedSize / 1024).toStringAsFixed(1)} KB');
+        debugPrint('Compressão: $compressionRate%');
+
+        if (mounted) {
           setState(() {
             _imageController.text = dataUri;
           });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ "$fileName" carregada (${(compressedSize / 1024).toStringAsFixed(1)} KB)'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
       } else {
-        // User cancelled or no file selected
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhum arquivo selecionado')));
-        }
+        debugPrint('ℹ️ Usuário cancelou a seleção');
       }
     } catch (e, st) {
-      debugPrint('Erro ao selecionar arquivo: $e');
-      debugPrint('$st');
+      debugPrint('❌ Erro ao selecionar arquivo: $e');
+      debugPrint('Stack trace: $st');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao selecionar arquivo: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erro ao selecionar arquivo: $e')));
       }
+    }
+  }
+
+  Future<List<int>> _compressImage(List<int> bytes) async {
+    try {
+      // Converte para Uint8List
+      final uint8bytes = Uint8List.fromList(bytes);
+
+      // Decodifica a imagem
+      final image = img.decodeImage(uint8bytes);
+      if (image == null) {
+        throw Exception('Não foi possível decodificar a imagem');
+      }
+
+      // Redimensiona se for muito grande (máx 800px na maior dimensão)
+      img.Image resized = image;
+      if (image.width > 800 || image.height > 800) {
+        if (image.width > image.height) {
+          resized = img.copyResize(image, width: 800);
+        } else {
+          resized = img.copyResize(image, height: 800);
+        }
+      }
+
+      // Codifica como JPEG com qualidade 85 (bom equilíbrio qualidade/tamanho)
+      final compressed = img.encodeJpg(resized, quality: 85);
+
+      return compressed;
+    } catch (e) {
+      debugPrint('Erro na compressão, usando imagem original: $e');
+      return bytes;
     }
   }
 
@@ -315,8 +485,15 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            errorStyle: const TextStyle(fontSize: 12),
           ),
           hint: const Text('Selecione o tipo'),
+          validator: (value) {
+            if (value == null) {
+              return 'Tipo é obrigatório';
+            }
+            return null;
+          },
           items: const [
             DropdownMenuItem(
               value: MediaType.game,
@@ -333,10 +510,10 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
               setState(() {
                 _selectedType = newValue;
                 // Reset badge when type changes
-                if (!_getBadgeOptions().contains(_selectedBadge)) {
-                  _selectedBadge = 'Nenhum';
-                }
+                _selectedBadge = 'Nenhum';
               });
+              // Carrega os status da API
+              _loadStatusOptions();
             }
           },
         ),
@@ -428,39 +605,62 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
       children: [
         Text('Avaliação *', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            ...List.generate(5, (index) {
-              final starValue = index + 1;
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _rating = starValue;
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(
-                      starValue <= _rating ? Icons.star : Icons.star_border,
-                      size: 32,
-                      color:
-                          starValue <= _rating
-                              ? const Color(0xFFFFB800) // Gold color for filled stars
-                              : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color:
+                  (_rating == 0.0 && _ratingTouched)
+                      ? Theme.of(context).colorScheme.error.withOpacity(0.5)
+                      : Theme.of(context).dividerColor,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              ...List.generate(5, (index) {
+                final starValue = (index + 1).toDouble();
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _rating = starValue;
+                        _ratingTouched = true;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        starValue <= _rating ? Icons.star : Icons.star_border,
+                        size: 32,
+                        color:
+                            starValue <= _rating
+                                ? const Color(0xFFFFB800) // Gold color for filled stars
+                                : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                      ),
                     ),
                   ),
+                );
+              }),
+              const SizedBox(width: 8),
+              Text(
+                _rating > 0.0 ? '${_rating.toStringAsFixed(1)}/5' : 'Clique para avaliar',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color:
+                      (_rating == 0.0 && _ratingTouched)
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).textTheme.bodySmall?.color,
                 ),
-              );
-            }),
-            const SizedBox(width: 8),
-            Text(
-              _rating > 0 ? '$_rating/5' : '',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).textTheme.bodySmall?.color),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+        if (_rating == 0.0 && _ratingTouched)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 8),
+            child: Text('Avaliação é obrigatória', style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+          ),
       ],
     );
   }
@@ -483,12 +683,7 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
                 maxLines: 2,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'URL da imagem é obrigatória';
-                  }
-                  return null;
-                },
+                validator: null, // Capa não é obrigatória
                 onChanged: (value) {
                   // Force rebuild to show/hide preview
                   setState(() {});

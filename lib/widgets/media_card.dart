@@ -8,8 +8,9 @@ class MediaCard extends StatelessWidget {
   final bool showGenre;
   final double width;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
-  const MediaCard({super.key, required this.item, this.showGenre = false, this.width = 200, this.onTap});
+  const MediaCard({super.key, required this.item, this.showGenre = false, this.width = 200, this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +50,28 @@ class MediaCard extends StatelessWidget {
                             boxShadow: [BoxShadow(color: Colors.black.withAlpha((0.3 * 255).toInt()), blurRadius: 4)],
                           ),
                           child: Text(item.badge!, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    // Delete button (only if onDelete is provided)
+                    if (onDelete != null)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onDelete,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black.withAlpha((0.3 * 255).toInt()), blurRadius: 4)],
+                              ),
+                              child: const Icon(Icons.delete, color: Colors.white, size: 16),
+                            ),
+                          ),
                         ),
                       ),
                   ],

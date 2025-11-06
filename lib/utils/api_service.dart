@@ -292,4 +292,283 @@ class ApiService {
       return {'success': false, 'error': 'Erro de conexão: $e'};
     }
   }
+
+  // ============================================
+  // MEDIA ENDPOINTS - Mídias (Jogos, Filmes, Séries)
+  // ============================================
+
+  /// Lista todas as mídias
+  static Future<Map<String, dynamic>> getAllMidias({String? tipo, String? status}) async {
+    try {
+      print('🎮 Buscando todas as mídias');
+
+      String url = '$baseUrl/midias/';
+      final queryParams = <String>[];
+      if (tipo != null) queryParams.add('tipo=$tipo');
+      if (status != null) queryParams.add('status=$status');
+      if (queryParams.isNotEmpty) {
+        url += '?${queryParams.join('&')}';
+      }
+
+      print('🌐 URL: $url');
+
+      final response = await http.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        print('✅ ${data.length} mídias encontradas');
+        return {'success': true, 'data': data};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar mídias: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar mídias: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Busca uma mídia por ID
+  static Future<Map<String, dynamic>> getMidiaById(int midiaId) async {
+    try {
+      print('🎮 Buscando mídia ID: $midiaId');
+      print('🌐 URL: $baseUrl/midias/$midiaId');
+
+      final response = await http.get(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Mídia encontrada');
+        return {'success': true, 'data': data};
+      } else if (response.statusCode == 404) {
+        return {'success': false, 'error': 'Mídia não encontrada'};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar mídia: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar mídia: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Cria uma nova mídia
+  static Future<Map<String, dynamic>> createMidia({
+    required String titulo,
+    required String tipo,
+    String? genero,
+    int? ano,
+    String? status,
+    double? avaliacao,
+    String? capa,
+  }) async {
+    try {
+      print('➕ Criando nova mídia: $titulo');
+      print('🌐 URL: $baseUrl/midias/');
+
+      final body = <String, dynamic>{
+        'titulo': titulo,
+        'tipo': tipo,
+        if (genero != null) 'genero': genero,
+        if (ano != null) 'ano': ano,
+        if (status != null) 'status': status,
+        if (avaliacao != null) 'avaliacao': avaliacao,
+        if (capa != null) 'capa': capa,
+      };
+
+      final response = await http
+          .post(Uri.parse('$baseUrl/midias/'), headers: _headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Mídia criada com sucesso');
+        return {'success': true, 'data': data};
+      } else if (response.statusCode == 400) {
+        final data = jsonDecode(response.body);
+        final errorDetail = data['detail'] ?? 'Dados inválidos';
+        print('❌ Erro 400: $errorDetail');
+        return {'success': false, 'error': errorDetail};
+      } else {
+        return {'success': false, 'error': 'Erro ao criar mídia: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao criar mídia: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Atualiza uma mídia
+  static Future<Map<String, dynamic>> updateMidia({
+    required int midiaId,
+    String? titulo,
+    String? tipo,
+    String? genero,
+    int? ano,
+    String? status,
+    double? avaliacao,
+    String? capa,
+  }) async {
+    try {
+      print('✏️ Atualizando mídia ID: $midiaId');
+      print('🌐 URL: $baseUrl/midias/$midiaId');
+
+      final body = <String, dynamic>{};
+      if (titulo != null) body['titulo'] = titulo;
+      if (tipo != null) body['tipo'] = tipo;
+      if (genero != null) body['genero'] = genero;
+      if (ano != null) body['ano'] = ano;
+      if (status != null) body['status'] = status;
+      if (avaliacao != null) body['avaliacao'] = avaliacao;
+      if (capa != null) body['capa'] = capa;
+
+      final response = await http
+          .put(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Mídia atualizada com sucesso');
+        return {'success': true, 'data': data};
+      } else if (response.statusCode == 404) {
+        return {'success': false, 'error': 'Mídia não encontrada'};
+      } else if (response.statusCode == 400) {
+        final data = jsonDecode(response.body);
+        final errorDetail = data['detail'] ?? 'Dados inválidos';
+        return {'success': false, 'error': errorDetail};
+      } else {
+        return {'success': false, 'error': 'Erro ao atualizar mídia: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao atualizar mídia: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Deleta uma mídia
+  static Future<Map<String, dynamic>> deleteMidia(int midiaId) async {
+    try {
+      print('🗑️ Deletando mídia ID: $midiaId');
+      print('🌐 URL: $baseUrl/midias/$midiaId');
+
+      final response = await http.delete(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Mídia deletada com sucesso');
+        return {'success': true, 'data': data};
+      } else if (response.statusCode == 404) {
+        return {'success': false, 'error': 'Mídia não encontrada'};
+      } else {
+        return {'success': false, 'error': 'Erro ao deletar mídia: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao deletar mídia: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  // ============================================
+  // MEDIA CONFIG ENDPOINTS - Configurações de Mídias
+  // ============================================
+
+  /// Busca todos os tipos de mídia disponíveis
+  static Future<Map<String, dynamic>> getTiposMidia() async {
+    try {
+      print('📋 Buscando tipos de mídia');
+      print('🌐 URL: $baseUrl/midias/tipos');
+
+      final response = await http.get(Uri.parse('$baseUrl/midias/tipos'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        print('✅ ${data.length} tipos encontrados');
+        return {'success': true, 'data': data};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar tipos: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar tipos: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Busca os status disponíveis para um tipo de mídia
+  static Future<Map<String, dynamic>> getStatusPorTipo(String tipo) async {
+    try {
+      print('📋 Buscando status para tipo: $tipo');
+      print('🌐 URL: $baseUrl/midias/status/$tipo');
+
+      final response = await http.get(Uri.parse('$baseUrl/midias/status/$tipo'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        print('✅ ${data.length} status encontrados');
+        return {'success': true, 'data': data};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar status: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar status: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Busca os gêneros comuns para um tipo de mídia
+  static Future<Map<String, dynamic>> getGenerosPorTipo(String tipo) async {
+    try {
+      print('📋 Buscando gêneros para tipo: $tipo');
+      print('🌐 URL: $baseUrl/midias/generos/$tipo');
+
+      final response = await http.get(Uri.parse('$baseUrl/midias/generos/$tipo'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        print('✅ ${data.length} gêneros encontrados');
+        return {'success': true, 'data': data};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar gêneros: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar gêneros: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
+
+  /// Busca toda a configuração de mídias de uma vez
+  static Future<Map<String, dynamic>> getMidiasConfig() async {
+    try {
+      print('📋 Buscando configuração completa de mídias');
+      print('🌐 URL: $baseUrl/midias/config');
+
+      final response = await http.get(Uri.parse('$baseUrl/midias/config'), headers: _headers).timeout(const Duration(seconds: 10));
+
+      print('📡 Status da resposta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Configuração carregada com sucesso');
+        return {'success': true, 'data': data};
+      } else {
+        return {'success': false, 'error': 'Erro ao buscar configuração: ${response.statusCode}'};
+      }
+    } catch (e) {
+      print('❌ Erro ao buscar configuração: $e');
+      return {'success': false, 'error': 'Erro de conexão: $e'};
+    }
+  }
 }

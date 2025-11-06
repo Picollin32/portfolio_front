@@ -1,114 +1,43 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media_item_model.dart';
+import '../utils/api_service.dart';
 
 class MediaProvider with ChangeNotifier {
   List<MediaItem> _items = [];
-  int _nextId = 7;
+  bool _isLoading = false;
+  String? _error;
 
   List<MediaItem> get items => _items;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
 
   MediaProvider() {
-    _initializeData();
+    loadFromApi();
   }
 
-  Future<void> _initializeData() async {
-    await _loadItems();
-    
-    // Initialize with default data if empty
-    if (_items.isEmpty) {
-      _items = [
-        MediaItem(
-          id: 1,
-          title: 'The Last of Us Part II',
-          type: MediaType.game,
-          rating: 5,
-          image: 'assets/images/the-last-of-us-part-ii-game-cover.png',
-          badge: 'Platinado',
-          genre: 'Action/Adventure',
-          year: 2020,
-        ),
-        MediaItem(
-          id: 2,
-          title: 'Dune',
-          type: MediaType.movie,
-          rating: 4,
-          image: 'assets/images/dune-movie-poster.png',
-          genre: 'Sci-Fi',
-          year: 2021,
-        ),
-        MediaItem(
-          id: 3,
-          title: 'Breaking Bad',
-          type: MediaType.series,
-          rating: 5,
-          image: 'assets/images/breaking-bad-series-poster.png',
-          badge: 'Finalizada',
-          genre: 'Drama/Crime',
-          year: 2008,
-        ),
-        MediaItem(
-          id: 4,
-          title: 'God of War',
-          type: MediaType.game,
-          rating: 5,
-          image: 'assets/images/god-of-war-cover.png',
-          badge: 'Zerado',
-          genre: 'Action/Adventure',
-          year: 2018,
-        ),
-        MediaItem(
-          id: 5,
-          title: 'Inception',
-          type: MediaType.movie,
-          rating: 5,
-          image: 'assets/images/inception-inspired-poster.png',
-          genre: 'Sci-Fi/Thriller',
-          year: 2010,
-        ),
-        MediaItem(
-          id: 6,
-          title: 'Stranger Things',
-          type: MediaType.series,
-          rating: 4,
-          image: 'assets/images/stranger-things-series-poster.png',
-          badge: 'Finalizada',
-          genre: 'Sci-Fi/Horror',
-          year: 2016,
-        ),
-      ];
-      await _saveItems();
-    }
+  /// Carrega todas as mídias da API
+  Future<void> loadFromApi({String? tipo, String? status}) async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
-  }
 
-  Future<void> _loadItems() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final itemsJson = prefs.getString('mediaItems');
-      
-      if (itemsJson != null) {
-        final List<dynamic> decoded = jsonDecode(itemsJson);
-        _items = decoded.map((json) => MediaItem.fromJson(json)).toList();
-        
-        // Update nextId to be higher than the highest existing id
-        if (_items.isNotEmpty) {
-          _nextId = _items.map((item) => item.id).reduce((a, b) => a > b ? a : b) + 1;
-        }
+      final result = await ApiService.getAllMidias(tipo: tipo, status: status);
+
+      if (result['success'] == true) {
+        final List<dynamic> data = result['data'];
+        _items = data.map((json) => MediaItem.fromJson(json)).toList();
+        _error = null;
+      } else {
+        _error = result['error'] ?? 'Erro ao carregar mídias';
+        debugPrint('❌ Erro ao carregar mídias: $_error');
       }
     } catch (e) {
-      debugPrint('Error loading media items: $e');
-    }
-  }
-
-  Future<void> _saveItems() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final itemsJson = jsonEncode(_items.map((item) => item.toJson()).toList());
-      await prefs.setString('mediaItems', itemsJson);
-    } catch (e) {
-      debugPrint('Error saving media items: $e');
+      _error = 'Erro de conexão: $e';
+      debugPrint('❌ Erro ao carregar mídias: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -128,39 +57,99 @@ class MediaProvider with ChangeNotifier {
     return _items.where((item) => item.type == type).toList();
   }
 
-  Future<MediaItem> create(MediaItem item) async {
-    final newItem = item.copyWith(id: _nextId++);
-    _items.add(newItem);
-    await _saveItems();
-    notifyListeners();
-    return newItem;
+  /// Cria uma nova mídia na API
+  Future<MediaItem?> create(MediaItem item) async {
+    try {
+      final jsonData = item.toJson();
+
+      final result = await ApiService.createMidia(
+        titulo: jsonData['titulo'],
+        tipo: jsonData['tipo'],
+        genero: jsonData['genero'],
+        ano: jsonData['ano'],
+        status: jsonData['status'],
+        avaliacao: jsonData['avaliacao'],
+        capa: jsonData['capa'],
+      );
+
+      if (result['success'] == true) {
+        final newItem = MediaItem.fromJson(result['data']);
+        _items.add(newItem);
+        notifyListeners();
+        return newItem;
+      } else {
+        _error = result['error'];
+        debugPrint('❌ Erro ao criar mídia: $_error');
+        return null;
+      }
+    } catch (e) {
+      _error = 'Erro ao criar mídia: $e';
+      debugPrint('❌ $_error');
+      return null;
+    }
   }
 
+  /// Atualiza uma mídia na API
   Future<MediaItem?> update(int id, MediaItem updates) async {
-    final index = _items.indexWhere((item) => item.id == id);
-    if (index == -1) return null;
+    try {
+      final jsonData = updates.toJson();
 
-    _items[index] = updates.copyWith(id: id);
-    await _saveItems();
-    notifyListeners();
-    return _items[index];
+      final result = await ApiService.updateMidia(
+        midiaId: id,
+        titulo: jsonData['titulo'],
+        tipo: jsonData['tipo'],
+        genero: jsonData['genero'],
+        ano: jsonData['ano'],
+        status: jsonData['status'],
+        avaliacao: jsonData['avaliacao'],
+        capa: jsonData['capa'],
+      );
+
+      if (result['success'] == true) {
+        final updatedItem = MediaItem.fromJson(result['data']);
+        final index = _items.indexWhere((item) => item.id == id);
+        if (index != -1) {
+          _items[index] = updatedItem;
+          notifyListeners();
+        }
+        return updatedItem;
+      } else {
+        _error = result['error'];
+        debugPrint('❌ Erro ao atualizar mídia: $_error');
+        return null;
+      }
+    } catch (e) {
+      _error = 'Erro ao atualizar mídia: $e';
+      debugPrint('❌ $_error');
+      return null;
+    }
   }
 
+  /// Deleta uma mídia na API
   Future<bool> delete(int id) async {
-    final index = _items.indexWhere((item) => item.id == id);
-    if (index == -1) return false;
+    try {
+      final result = await ApiService.deleteMidia(id);
 
-    _items.removeAt(index);
-    await _saveItems();
-    notifyListeners();
-    return true;
+      if (result['success'] == true) {
+        _items.removeWhere((item) => item.id == id);
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['error'];
+        debugPrint('❌ Erro ao deletar mídia: $_error');
+        return false;
+      }
+    } catch (e) {
+      _error = 'Erro ao deletar mídia: $e';
+      debugPrint('❌ $_error');
+      return false;
+    }
   }
 
   List<MediaItem> search(String query) {
     final lowercaseQuery = query.toLowerCase();
     return _items.where((item) {
-      return item.title.toLowerCase().contains(lowercaseQuery) ||
-             (item.genre?.toLowerCase().contains(lowercaseQuery) ?? false);
+      return item.title.toLowerCase().contains(lowercaseQuery) || (item.genre?.toLowerCase().contains(lowercaseQuery) ?? false);
     }).toList();
   }
 

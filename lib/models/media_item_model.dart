@@ -2,9 +2,9 @@ class MediaItem {
   final int id;
   final String title;
   final MediaType type;
-  final int rating;
+  final double rating; // Mudado de int para double (0-5)
   final String image;
-  final String? badge;
+  final String? status; // Mudado de badge para status
   final String? genre;
   final int? year;
 
@@ -14,61 +14,78 @@ class MediaItem {
     required this.type,
     required this.rating,
     required this.image,
-    this.badge,
+    this.status,
     this.genre,
     this.year,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'title': title,
-      'type': type.name,
-      'rating': rating,
-      'image': image,
-      'badge': badge,
-      'genre': genre,
-      'year': year,
+      'titulo': title, // Backend usa 'titulo'
+      'tipo': _typeToBackend(type), // Backend usa 'tipo'
+      'avaliacao': rating, // Backend usa 'avaliacao'
+      'capa': image, // Backend usa 'capa'
+      'status': status,
+      'genero': genre, // Backend usa 'genero'
+      'ano': year, // Backend usa 'ano'
     };
   }
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
     return MediaItem(
       id: json['id'] as int,
-      title: json['title'] as String,
-      type: MediaType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => MediaType.game,
-      ),
-      rating: json['rating'] as int,
-      image: json['image'] as String,
-      badge: json['badge'] as String?,
-      genre: json['genre'] as String?,
-      year: json['year'] as int?,
+      title: json['titulo'] as String, // Backend retorna 'titulo'
+      type: _typeFromBackend(json['tipo'] as String?), // Backend retorna 'tipo'
+      rating: (json['avaliacao'] as num?)?.toDouble() ?? 0.0, // Backend retorna 'avaliacao'
+      image: json['capa'] as String? ?? '', // Backend retorna 'capa'
+      status: json['status'] as String?,
+      genre: json['genero'] as String?, // Backend retorna 'genero'
+      year: json['ano'] as int?, // Backend retorna 'ano'
     );
   }
 
-  MediaItem copyWith({
-    int? id,
-    String? title,
-    MediaType? type,
-    int? rating,
-    String? image,
-    String? badge,
-    String? genre,
-    int? year,
-  }) {
+  // Conversão de tipo para o formato do backend
+  static String _typeToBackend(MediaType type) {
+    switch (type) {
+      case MediaType.game:
+        return 'Jogo';
+      case MediaType.movie:
+        return 'Filme';
+      case MediaType.series:
+        return 'Série';
+    }
+  }
+
+  // Conversão de tipo do formato do backend
+  static MediaType _typeFromBackend(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'jogo':
+        return MediaType.game;
+      case 'filme':
+        return MediaType.movie;
+      case 'série':
+      case 'serie':
+        return MediaType.series;
+      default:
+        return MediaType.game;
+    }
+  }
+
+  MediaItem copyWith({int? id, String? title, MediaType? type, double? rating, String? image, String? status, String? genre, int? year}) {
     return MediaItem(
       id: id ?? this.id,
       title: title ?? this.title,
       type: type ?? this.type,
       rating: rating ?? this.rating,
       image: image ?? this.image,
-      badge: badge ?? this.badge,
+      status: status ?? this.status,
       genre: genre ?? this.genre,
       year: year ?? this.year,
     );
   }
+
+  // Getter para badge (compatibilidade com código antigo)
+  String? get badge => status;
 
   String get typeLabel {
     switch (type) {
@@ -93,8 +110,4 @@ class MediaItem {
   }
 }
 
-enum MediaType {
-  game,
-  movie,
-  series,
-}
+enum MediaType { game, movie, series }

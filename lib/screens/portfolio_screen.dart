@@ -14,10 +14,43 @@ class PortfolioScreen extends StatelessWidget {
   void _showMediaDialog(BuildContext context, MediaItem? media) async {
     final result = await showDialog(context: context, builder: (context) => MediaFormDialog(media: media));
 
-    // Se retornou true, apenas mostra uma mensagem
-    // A recarga será feita através do Provider quando o backend estiver conectado
+    // Se retornou true, recarrega a lista do provider
     if (result == true && context.mounted) {
-      // Placeholder - quando o backend estiver pronto, aqui recarregaremos os dados
+      final mediaProvider = Provider.of<MediaProvider>(context, listen: false);
+      await mediaProvider.loadFromApi();
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context, MediaItem media) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmar Exclusão'),
+            content: Text('Deseja realmente excluir "${media.title}"?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                child: const Text('Excluir'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final mediaProvider = Provider.of<MediaProvider>(context, listen: false);
+      try {
+        await mediaProvider.delete(media.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ "${media.title}" excluída com sucesso')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erro ao excluir: $e')));
+        }
+      }
     }
   }
 
@@ -201,6 +234,7 @@ class PortfolioScreen extends StatelessWidget {
                                   item: recentItems[index],
                                   width: 160,
                                   onTap: isAdmin ? () => _showMediaDialog(context, recentItems[index]) : null,
+                                  onDelete: isAdmin ? () => _handleDelete(context, recentItems[index]) : null,
                                 ),
                               );
                             },
@@ -231,6 +265,7 @@ class PortfolioScreen extends StatelessWidget {
                                   width: 160,
                                   showGenre: true,
                                   onTap: isAdmin ? () => _showMediaDialog(context, games[index]) : null,
+                                  onDelete: isAdmin ? () => _handleDelete(context, games[index]) : null,
                                 ),
                               );
                             },
@@ -261,6 +296,7 @@ class PortfolioScreen extends StatelessWidget {
                                   width: 160,
                                   showGenre: true,
                                   onTap: isAdmin ? () => _showMediaDialog(context, movies[index]) : null,
+                                  onDelete: isAdmin ? () => _handleDelete(context, movies[index]) : null,
                                 ),
                               );
                             },
@@ -291,6 +327,7 @@ class PortfolioScreen extends StatelessWidget {
                                   width: 160,
                                   showGenre: true,
                                   onTap: isAdmin ? () => _showMediaDialog(context, series[index]) : null,
+                                  onDelete: isAdmin ? () => _handleDelete(context, series[index]) : null,
                                 ),
                               );
                             },

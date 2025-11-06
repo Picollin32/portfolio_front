@@ -153,6 +153,105 @@ class ApiFacade {
   }
 
   // ========================================
+  // Media Management Operations
+  // ========================================
+
+  /// Busca todas as mídias
+  Future<ApiResponse<List<dynamic>>> getAllMidias({String? tipo, String? status}) async {
+    try {
+      final result = await ApiService.getAllMidias(tipo: tipo, status: status);
+
+      if (result['success'] == true) {
+        final List<dynamic> midiasData = result['data'];
+        return ApiResponse.success(midiasData);
+      }
+
+      return ApiResponse.error(result['error'] ?? 'Falha ao buscar mídias');
+    } catch (e) {
+      return ApiResponse.error('Erro ao buscar mídias: $e');
+    }
+  }
+
+  /// Cria uma nova mídia
+  Future<ApiResponse<dynamic>> createMidia({
+    required String titulo,
+    required String tipo,
+    String? genero,
+    int? ano,
+    String? status,
+    double? avaliacao,
+    String? capa,
+  }) async {
+    try {
+      final result = await ApiService.createMidia(
+        titulo: titulo,
+        tipo: tipo,
+        genero: genero,
+        ano: ano,
+        status: status,
+        avaliacao: avaliacao,
+        capa: capa,
+      );
+
+      if (result['success'] == true) {
+        return ApiResponse.success(result['data']);
+      }
+
+      return ApiResponse.error(result['error'] ?? 'Falha ao criar mídia');
+    } catch (e) {
+      return ApiResponse.error('Erro ao criar mídia: $e');
+    }
+  }
+
+  /// Atualiza uma mídia
+  Future<ApiResponse<dynamic>> updateMidia({
+    required int midiaId,
+    String? titulo,
+    String? tipo,
+    String? genero,
+    int? ano,
+    String? status,
+    double? avaliacao,
+    String? capa,
+  }) async {
+    try {
+      final result = await ApiService.updateMidia(
+        midiaId: midiaId,
+        titulo: titulo,
+        tipo: tipo,
+        genero: genero,
+        ano: ano,
+        status: status,
+        avaliacao: avaliacao,
+        capa: capa,
+      );
+
+      if (result['success'] == true) {
+        return ApiResponse.success(result['data']);
+      }
+
+      return ApiResponse.error(result['error'] ?? 'Falha ao atualizar mídia');
+    } catch (e) {
+      return ApiResponse.error('Erro ao atualizar mídia: $e');
+    }
+  }
+
+  /// Deleta uma mídia
+  Future<ApiResponse<void>> deleteMidia(int midiaId) async {
+    try {
+      final result = await ApiService.deleteMidia(midiaId);
+
+      if (result['success'] == true) {
+        return ApiResponse.success(null);
+      }
+
+      return ApiResponse.error(result['error'] ?? 'Falha ao deletar mídia');
+    } catch (e) {
+      return ApiResponse.error('Erro ao deletar mídia: $e');
+    }
+  }
+
+  // ========================================
   // Batch Operations (Facade benefit)
   // ========================================
 
