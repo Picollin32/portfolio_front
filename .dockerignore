@@ -1,0 +1,54 @@
+# .dockerignore - Arquivos a serem ignorados no build do Docker
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.metadata
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests
+test/
+*_test.dart
+
+# Documentation
+*.md
+docs/
+
+# Android
+android/
+!android/app/src/main/res/
+
+# iOS
+ios/
+!ios/Runner/Info.plist
+
+# Web (exceto necessário para build)
+web/index.html.bak
+
+# Windows, Linux, MacOS builds
+windows/
+linux/
+macos/
+
+# Environment
+.env
+.env.local
