@@ -35,17 +35,43 @@ class ApiFacade {
           final userEmail = payload['sub'] as String;
           final userRole = payload['role'] as String;
 
-          return ApiResponse.success(
-            LoginResult(
-              token: token,
-              user: User(
+          // Buscar dados completos do usuário para obter foto e nome completo
+          User user;
+          try {
+            final usersResponse = await getAllUsers(token);
+            if (usersResponse.success && usersResponse.data != null) {
+              // Procurar o usuário atual na lista
+              final currentUser = usersResponse.data!.firstWhere(
+                (u) => u.email == userEmail,
+                orElse:
+                    () => User(
+                      id: userEmail,
+                      email: userEmail,
+                      name: userRole == 'admin' ? 'Administrador' : 'Usuário',
+                      role: userRole == 'admin' ? UserRole.admin : UserRole.user,
+                    ),
+              );
+              user = currentUser;
+            } else {
+              // Fallback se não conseguir buscar a lista
+              user = User(
                 id: userEmail,
                 email: userEmail,
                 name: userRole == 'admin' ? 'Administrador' : 'Usuário',
                 role: userRole == 'admin' ? UserRole.admin : UserRole.user,
-              ),
-            ),
-          );
+              );
+            }
+          } catch (e) {
+            // Fallback em caso de erro
+            user = User(
+              id: userEmail,
+              email: userEmail,
+              name: userRole == 'admin' ? 'Administrador' : 'Usuário',
+              role: userRole == 'admin' ? UserRole.admin : UserRole.user,
+            );
+          }
+
+          return ApiResponse.success(LoginResult(token: token, user: user));
         }
       }
 

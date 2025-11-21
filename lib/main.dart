@@ -7,6 +7,8 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/portfolio_screen.dart';
 import 'screens/admin_screen.dart';
+import 'screens/category_screen.dart';
+import 'models/media_item_model.dart';
 import 'utils/app_theme.dart';
 import 'config/config.dart';
 import 'widgets/environment_banner.dart';
@@ -36,9 +38,9 @@ class MyApp extends StatelessWidget {
           '/register': (context) => const RegisterScreen(),
           '/portfolio': (context) => const PortfolioScreen(),
           '/admin': (context) => const AdminScreen(),
-          '/jogos': (context) => const CategoryPlaceholder(title: 'Jogos'),
-          '/filmes': (context) => const CategoryPlaceholder(title: 'Filmes'),
-          '/series': (context) => const CategoryPlaceholder(title: 'Séries'),
+          '/jogos': (context) => const CategoryScreen(type: MediaType.game, title: 'Jogos', icon: Icons.videogame_asset),
+          '/filmes': (context) => const CategoryScreen(type: MediaType.movie, title: 'Filmes', icon: Icons.movie),
+          '/series': (context) => const CategoryScreen(type: MediaType.series, title: 'Séries', icon: Icons.tv),
         },
         // EnvironmentBanner agora dentro do builder
         builder: (context, child) {
@@ -46,17 +48,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-// Placeholder screens - These will be replaced with full implementations
-class CategoryPlaceholder extends StatelessWidget {
-  final String title;
-
-  const CategoryPlaceholder({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text(title)), body: Center(child: Text('Tela de $title em construção')));
   }
 }

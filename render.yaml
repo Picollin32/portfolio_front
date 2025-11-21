@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: portifolio-front
+    name: portfolio-front
     env: static
     buildCommand: echo "Build já pronto - usando build/web existente"
     staticPublishPath: ./build/web

@@ -7,6 +7,7 @@ import '../models/user_model.dart';
 import '../widgets/media_card.dart';
 import '../widgets/protected_route.dart';
 import '../widgets/media_form_dialog.dart';
+import '../widgets/user_avatar.dart';
 
 class PortfolioScreen extends StatelessWidget {
   const PortfolioScreen({super.key});
@@ -110,18 +111,7 @@ class PortfolioScreen extends StatelessWidget {
                         child: Row(
                           children: [
                             // User Avatar
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              backgroundImage: authProvider.user?.photo != null ? NetworkImage(authProvider.user!.photo!) : null,
-                              child:
-                                  authProvider.user?.photo == null
-                                      ? Text(
-                                        authProvider.user?.name.isNotEmpty == true ? authProvider.user!.name[0].toUpperCase() : 'U',
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                      )
-                                      : null,
-                            ),
+                            UserAvatar(photoUrl: authProvider.user?.photo, fallbackText: authProvider.user?.name ?? 'U', radius: 24),
                             const SizedBox(width: 12),
                             // User Info
                             Expanded(
@@ -207,9 +197,9 @@ class PortfolioScreen extends StatelessWidget {
                                 runSpacing: 12,
                                 alignment: WrapAlignment.center,
                                 children: [
-                                  _buildStatChip(context, Icons.videogame_asset, 'Jogos', games.length),
-                                  _buildStatChip(context, Icons.movie, 'Filmes', movies.length),
-                                  _buildStatChip(context, Icons.tv, 'Séries', series.length),
+                                  _buildStatChip(context, Icons.videogame_asset, 'Jogos', games.length, MediaType.game),
+                                  _buildStatChip(context, Icons.movie, 'Filmes', movies.length, MediaType.movie),
+                                  _buildStatChip(context, Icons.tv, 'Séries', series.length, MediaType.series),
                                 ],
                               ),
                             ],
@@ -381,28 +371,45 @@ class PortfolioScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatChip(BuildContext context, IconData icon, String label, int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            '$count',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        ],
+  Widget _buildStatChip(BuildContext context, IconData icon, String label, int count, MediaType type) {
+    return InkWell(
+      onTap: () {
+        // Navegar para a página correspondente
+        switch (type) {
+          case MediaType.game:
+            Navigator.pushNamed(context, '/jogos');
+            break;
+          case MediaType.movie:
+            Navigator.pushNamed(context, '/filmes');
+            break;
+          case MediaType.series:
+            Navigator.pushNamed(context, '/series');
+            break;
+        }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              '$count',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(width: 4),
+            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
       ),
     );
   }

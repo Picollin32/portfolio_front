@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
+import '../widgets/profile_photo_upload_widget.dart';
 
 class UserFormDialog extends StatefulWidget {
   final User? user;
@@ -23,6 +24,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
       _firstNameController.text = widget.user!.firstName ?? '';
       _lastNameController.text = widget.user!.lastName ?? '';
       _emailController.text = widget.user!.email;
+      _photoUrl = widget.user!.photo;
     }
   }
 
@@ -56,7 +59,12 @@ class _UserFormDialogState extends State<UserFormDialog> {
     try {
       if (_isEditing) {
         // Update user
-        final updates = {'firstName': _firstNameController.text, 'lastName': _lastNameController.text, 'email': _emailController.text};
+        final updates = {
+          'firstName': _firstNameController.text,
+          'lastName': _lastNameController.text,
+          'email': _emailController.text,
+          'photo': _photoUrl,
+        };
 
         // Only update password if provided
         if (_passwordController.text.isNotEmpty) {
@@ -84,6 +92,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
           lastName: _lastNameController.text,
           email: _emailController.text,
           password: _passwordController.text,
+          photo: _photoUrl,
         );
 
         final result = await authProvider.register(registerData);
@@ -147,6 +156,24 @@ class _UserFormDialogState extends State<UserFormDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Photo Upload
+                      Center(
+                        child: Column(
+                          children: [
+                            ProfilePhotoUploadWidget(
+                              imageUrl: _photoUrl,
+                              onImageSelected: (String imageUrl) {
+                                setState(() => _photoUrl = imageUrl);
+                              },
+                              size: 100,
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Foto de perfil (opcional)', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
                       // First Name
                       TextFormField(
                         controller: _firstNameController,
