@@ -161,49 +161,86 @@ class PortfolioScreen extends StatelessWidget {
 
                       // Hero Section with gradient - CENTERED
                       Center(
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 800),
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.collections, size: 56, color: Theme.of(context).colorScheme.primary),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Meu Universo de Mídia',
-                                style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 32, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
+                        child: TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 800),
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: Container(
+                                  constraints: const BoxConstraints(maxWidth: 800),
+                                  padding: const EdgeInsets.all(32),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                        Theme.of(context).colorScheme.secondary.withOpacity(0.15),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                        blurRadius: 30,
+                                        spreadRadius: 5,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                              blurRadius: 30,
+                                              spreadRadius: 5,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(Icons.collections_rounded, size: 56, color: Colors.white),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Meu Universo de Mídia',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.headlineLarge?.copyWith(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Minhas jornadas por jogos, filmes e séries, tudo em um só lugar.',
+                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16, height: 1.5),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Wrap(
+                                        spacing: 12,
+                                        runSpacing: 12,
+                                        alignment: WrapAlignment.center,
+                                        children: [
+                                          _buildStatChip(context, Icons.videogame_asset_rounded, 'Jogos', games.length, MediaType.game),
+                                          _buildStatChip(context, Icons.movie_rounded, 'Filmes', movies.length, MediaType.movie),
+                                          _buildStatChip(context, Icons.tv_rounded, 'Séries', series.length, MediaType.series),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Minhas jornadas por jogos, filmes e séries, tudo em um só lugar.',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 24),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                alignment: WrapAlignment.center,
-                                children: [
-                                  _buildStatChip(context, Icons.videogame_asset, 'Jogos', games.length, MediaType.game),
-                                  _buildStatChip(context, Icons.movie, 'Filmes', movies.length, MediaType.movie),
-                                  _buildStatChip(context, Icons.tv, 'Séries', series.length, MediaType.series),
-                                ],
-                              ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -222,9 +259,9 @@ class PortfolioScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 16),
                                 child: MediaCard(
                                   item: recentItems[index],
-                                  width: 160,
-                                  onTap: isAdmin ? () => _showMediaDialog(context, recentItems[index]) : null,
-                                  onDelete: isAdmin ? () => _handleDelete(context, recentItems[index]) : null,
+                                  width: 180,
+                                  onTap: () => _showMediaDialog(context, recentItems[index]),
+                                  onDelete: () => _handleDelete(context, recentItems[index]),
                                 ),
                               );
                             },
@@ -252,10 +289,10 @@ class PortfolioScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 16),
                                 child: MediaCard(
                                   item: games[index],
-                                  width: 160,
+                                  width: 180,
                                   showGenre: true,
-                                  onTap: isAdmin ? () => _showMediaDialog(context, games[index]) : null,
-                                  onDelete: isAdmin ? () => _handleDelete(context, games[index]) : null,
+                                  onTap: () => _showMediaDialog(context, games[index]),
+                                  onDelete: () => _handleDelete(context, games[index]),
                                 ),
                               );
                             },
@@ -283,10 +320,10 @@ class PortfolioScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 16),
                                 child: MediaCard(
                                   item: movies[index],
-                                  width: 160,
+                                  width: 180,
                                   showGenre: true,
-                                  onTap: isAdmin ? () => _showMediaDialog(context, movies[index]) : null,
-                                  onDelete: isAdmin ? () => _handleDelete(context, movies[index]) : null,
+                                  onTap: () => _showMediaDialog(context, movies[index]),
+                                  onDelete: () => _handleDelete(context, movies[index]),
                                 ),
                               );
                             },
@@ -314,10 +351,10 @@ class PortfolioScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(right: 16),
                                 child: MediaCard(
                                   item: series[index],
-                                  width: 160,
+                                  width: 180,
                                   showGenre: true,
-                                  onTap: isAdmin ? () => _showMediaDialog(context, series[index]) : null,
-                                  onDelete: isAdmin ? () => _handleDelete(context, series[index]) : null,
+                                  onTap: () => _showMediaDialog(context, series[index]),
+                                  onDelete: () => _handleDelete(context, series[index]),
                                 ),
                               );
                             },
@@ -330,14 +367,20 @@ class PortfolioScreen extends StatelessWidget {
                 ),
               ),
             ),
-            floatingActionButton:
-                isAdmin
-                    ? FloatingActionButton(
-                      onPressed: () => _showMediaDialog(context, null),
-                      tooltip: 'Adicionar Mídia',
-                      child: const Icon(Icons.add),
-                    )
-                    : null,
+            floatingActionButton: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]),
+                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 20, spreadRadius: 3)],
+              ),
+              child: FloatingActionButton(
+                onPressed: () => _showMediaDialog(context, null),
+                tooltip: 'Adicionar Mídia',
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: const Icon(Icons.add_rounded, size: 32),
+              ),
+            ),
           );
         },
       ),
@@ -345,72 +388,133 @@ class PortfolioScreen extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title, IconData icon, {VoidCallback? onViewAll}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 600),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(-20 * (1 - value), 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5),
+                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 15, spreadRadius: 2)],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.4), blurRadius: 12, spreadRadius: 1),
+                      ],
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                  ),
+                  if (onViewAll != null)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: TextButton.icon(
+                        onPressed: onViewAll,
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                        label: const Text('Ver Todos'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
-          if (onViewAll != null)
-            TextButton.icon(onPressed: onViewAll, icon: const Icon(Icons.arrow_forward, size: 18), label: const Text('Ver Todos')),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildStatChip(BuildContext context, IconData icon, String label, int count, MediaType type) {
-    return InkWell(
-      onTap: () {
-        // Navegar para a página correspondente
-        switch (type) {
-          case MediaType.game:
-            Navigator.pushNamed(context, '/jogos');
-            break;
-          case MediaType.movie:
-            Navigator.pushNamed(context, '/filmes');
-            break;
-          case MediaType.series:
-            Navigator.pushNamed(context, '/series');
-            break;
-        }
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              '$count',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 500),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: InkWell(
+            onTap: () {
+              // Navegar para a página correspondente
+              switch (type) {
+                case MediaType.game:
+                  Navigator.pushNamed(context, '/jogos');
+                  break;
+                case MediaType.movie:
+                  Navigator.pushNamed(context, '/filmes');
+                  break;
+                case MediaType.series:
+                  Navigator.pushNamed(context, '/series');
+                  break;
+              }
+            },
+            borderRadius: BorderRadius.circular(25),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.4), width: 1.5),
+                boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 10, spreadRadius: 1)],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), shape: BoxShape.circle),
+                    child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '$count',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                ],
+              ),
             ),
-            const SizedBox(width: 4),
-            Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

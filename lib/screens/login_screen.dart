@@ -10,7 +10,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -18,10 +18,36 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+
+    _slideController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+
+    _fadeController.forward();
+    _slideController.forward();
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -35,10 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authProvider = context.read<AuthProvider>();
-      final success = await authProvider.login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      final success = await authProvider.login(_emailController.text, _passwordController.text);
 
       if (!mounted) return;
 
@@ -68,173 +91,208 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: AppTheme.gradientBackground,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topRight,
+            radius: 1.5,
+            colors: [
+              Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 450),
-                padding: const EdgeInsets.all(32),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Title
-                      Text(
-                        'Meu Portfólio',
-                        style: Theme.of(context).textTheme.displaySmall,
-                        textAlign: TextAlign.center,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Card(
+                  elevation: 20,
+                  shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 450),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                          Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Entre na sua conta para gerenciar seu universo de mídia',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Email field
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'seu@email.com',
-                          prefixIcon: const Icon(Icons.mail_outline),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira seu email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Email inválido';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          hintText: '••••••••',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                    ),
+                    padding: const EdgeInsets.all(40),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Icon with glow effect
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 30, spreadRadius: 5),
+                                ],
+                              ),
+                              child: const Icon(Icons.collections_rounded, size: 48, color: Colors.white),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
                           ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira sua senha';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Error message
-                      if (_errorMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.red400.withAlpha((0.1 * 255).toInt()),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.red400),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: TextStyle(color: AppTheme.red400),
+                          const SizedBox(height: 24),
+                          // Title
+                          Text(
+                            'Meu Portfólio',
+                            style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
                             textAlign: TextAlign.center,
                           ),
-                        ),
-
-                      // Login button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Text('Entrar'),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Register link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                          const SizedBox(height: 8),
                           Text(
-                            'Não tem uma conta? ',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            'Entre na sua conta para gerenciar seu universo de mídia',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+                            textAlign: TextAlign.center,
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/register');
+                          const SizedBox(height: 32),
+
+                          // Email field
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              hintText: 'seu@email.com',
+                              prefixIcon: const Icon(Icons.mail_outline_rounded),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor, insira seu email';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Email inválido';
+                              }
+                              return null;
                             },
-                            child: const Text('Cadastre-se'),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password field
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Senha',
+                              hintText: '••••••••',
+                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor, insira sua senha';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Error message
+                          if (_errorMessage != null)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.red400.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppTheme.red400.withOpacity(0.5), width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline_rounded, color: AppTheme.red400, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text(_errorMessage!, style: TextStyle(color: AppTheme.red400))),
+                                ],
+                              ),
+                            ),
+
+                          // Login button
+                          Container(
+                            height: 54,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child:
+                                  _isLoading
+                                      ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                      : const Text(
+                                        'Entrar',
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                      ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Register link
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Não tem uma conta? ', style: Theme.of(context).textTheme.bodyMedium),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/register');
+                                },
+                                child: Text(
+                                  'Cadastre-se',
+                                  style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-
-                      // Test credentials
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.slate700),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Credenciais de teste (Admin):',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Email: admin@portfolio.com',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            Text(
-                              'Senha: admin123',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

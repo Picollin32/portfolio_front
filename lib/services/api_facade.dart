@@ -35,40 +35,51 @@ class ApiFacade {
           final userEmail = payload['sub'] as String;
           final userRole = payload['role'] as String;
 
-          // Buscar dados completos do usuário para obter foto e nome completo
+          // Buscar dados completos do usuário
           User user;
-          try {
-            final usersResponse = await getAllUsers(token);
-            if (usersResponse.success && usersResponse.data != null) {
-              // Procurar o usuário atual na lista
-              final currentUser = usersResponse.data!.firstWhere(
-                (u) => u.email == userEmail,
-                orElse:
-                    () => User(
-                      id: userEmail,
-                      email: userEmail,
-                      name: userRole == 'admin' ? 'Administrador' : 'Usuário',
-                      role: userRole == 'admin' ? UserRole.admin : UserRole.user,
-                    ),
-              );
-              user = currentUser;
-            } else {
-              // Fallback se não conseguir buscar a lista
-              user = User(
-                id: userEmail,
-                email: userEmail,
-                name: userRole == 'admin' ? 'Administrador' : 'Usuário',
-                role: userRole == 'admin' ? UserRole.admin : UserRole.user,
-              );
+
+          // Se for admin, busca a lista de usuários para pegar os dados completos
+          if (userRole == 'admin') {
+            try {
+              final usersResponse = await getAllUsers(token);
+              if (usersResponse.success && usersResponse.data != null && usersResponse.data!.isNotEmpty) {
+                // Procurar o usuário admin na lista
+                try {
+                  final currentUser = usersResponse.data!.firstWhere((u) => u.email == userEmail);
+                  user = currentUser;
+                } catch (e) {
+                  // Fallback se não encontrar na lista
+                  user = User(id: userEmail, email: userEmail, name: 'Administrador', role: UserRole.admin);
+                }
+              } else {
+                user = User(id: userEmail, email: userEmail, name: 'Administrador', role: UserRole.admin);
+              }
+            } catch (e) {
+              user = User(id: userEmail, email: userEmail, name: 'Administrador', role: UserRole.admin);
             }
-          } catch (e) {
-            // Fallback em caso de erro
-            user = User(
-              id: userEmail,
-              email: userEmail,
-              name: userRole == 'admin' ? 'Administrador' : 'Usuário',
-              role: userRole == 'admin' ? UserRole.admin : UserRole.user,
-            );
+          } else {
+            // Para usuários comuns, busca os dados através do endpoint /users/me
+            try {
+              final profileResult = await ApiService.getUserProfile(token);
+              if (profileResult['success'] == true) {
+                final profileData = profileResult['data'];
+                user = User(
+                  id: profileData['id'].toString(),
+                  email: profileData['email'],
+                  name: profileData['full_name'] ?? 'Usuário',
+                  firstName: profileData['full_name']?.split(' ').first,
+                  lastName: profileData['full_name']?.split(' ').skip(1).join(' '),
+                  photo: profileData['profile_image_url'],
+                  role: UserRole.user,
+                );
+              } else {
+                // Fallback se não conseguir buscar o perfil
+                user = User(id: userEmail, email: userEmail, name: 'Usuário', role: UserRole.user);
+              }
+            } catch (e) {
+              // Fallback em caso de erro
+              user = User(id: userEmail, email: userEmail, name: 'Usuário', role: UserRole.user);
+            }
           }
 
           return ApiResponse.success(LoginResult(token: token, user: user));

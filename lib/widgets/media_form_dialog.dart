@@ -95,11 +95,11 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
     // Opções estáticas de fallback baseadas nos mockados originais
     switch (_selectedType) {
       case MediaType.game:
-        return ['Nenhum', 'Zerado', 'Platinado', 'Abandonado', 'Jogando', 'Em andamento'];
+        return ['Nenhum', 'Zerado', 'Platinado', 'Abandonado', 'Jogando', 'Em andamento', 'Favorito'];
       case MediaType.movie:
         return ['Nenhum', 'Assistido', 'Favorito', 'Para Reassistir'];
       case MediaType.series:
-        return ['Nenhum', 'Finalizada', 'Assistindo', 'Pausada', 'Abandonada'];
+        return ['Nenhum', 'Finalizada', 'Assistindo', 'Pausada', 'Abandonada', 'Favorita'];
       default:
         return ['Nenhum'];
     }

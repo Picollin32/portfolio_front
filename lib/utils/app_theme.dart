@@ -114,7 +114,12 @@ class AppTheme {
   // Gradient backgrounds
   static BoxDecoration get gradientBackground {
     return BoxDecoration(
-      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [slate900, slate800, slate900]),
+      gradient: RadialGradient(
+        center: Alignment.topCenter,
+        radius: 2.0,
+        colors: [blue600.withOpacity(0.08), slate900, slate900],
+        stops: const [0.0, 0.3, 1.0],
+      ),
     );
   }
 
@@ -123,10 +128,24 @@ class AppTheme {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [slate800.withAlpha((0.6 * 255).toInt()), slate800.withAlpha((0.4 * 255).toInt())],
+        colors: [slate800.withOpacity(0.8), slate800.withOpacity(0.5)],
       ),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: slate700),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: slate700.withOpacity(0.5)),
+      boxShadow: [BoxShadow(color: blue600.withOpacity(0.1), blurRadius: 20, spreadRadius: 2)],
+    );
+  }
+
+  static BoxDecoration glassEffect({Color? color}) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [(color ?? slate800).withOpacity(0.7), (color ?? slate800).withOpacity(0.4)],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30, spreadRadius: 5)],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
+import '../widgets/user_avatar.dart';
 
 class PortfolioHeader extends StatelessWidget {
   final User? user;
@@ -19,18 +20,7 @@ class PortfolioHeader extends StatelessWidget {
       child: Row(
         children: [
           // User Avatar
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            backgroundImage: user?.photo != null ? NetworkImage(user!.photo!) : null,
-            child:
-                user?.photo == null
-                    ? Text(
-                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    )
-                    : null,
-          ),
+          UserAvatar(photoUrl: user?.photo, fallbackText: user?.name ?? 'U', radius: 20),
           const SizedBox(width: 12),
 
           // User Info

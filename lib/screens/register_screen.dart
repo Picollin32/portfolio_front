@@ -105,15 +105,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: AppTheme.gradientBackground,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topLeft,
+            radius: 1.5,
+            colors: [
+              Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 20,
+              shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 450),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                      Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                    ],
+                  ),
+                ),
                 padding: const EdgeInsets.all(32),
                 child: Form(
                   key: _formKey,
@@ -134,26 +157,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // Photo upload
                       Center(
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: AppTheme.slate700,
-                            backgroundImage:
-                                _photoBase64 != null
-                                    ? (() {
-                                      try {
-                                        final comma = _photoBase64!.indexOf(',');
-                                        if (comma != -1) {
-                                          final data = _photoBase64!.substring(comma + 1);
-                                          return MemoryImage(base64Decode(data));
-                                        }
-                                      } catch (_) {}
-                                      return null;
-                                    })()
-                                    : null,
-                            child: _photoBase64 == null ? const Icon(Icons.add_a_photo, size: 32) : null,
-                          ),
+                        child: Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: AppTheme.slate700,
+                                  backgroundImage:
+                                      _photoBase64 != null
+                                          ? (() {
+                                            try {
+                                              final comma = _photoBase64!.indexOf(',');
+                                              if (comma != -1) {
+                                                final data = _photoBase64!.substring(comma + 1);
+                                                return MemoryImage(base64Decode(data));
+                                              }
+                                            } catch (_) {}
+                                            return null;
+                                          })()
+                                          : null,
+                                  child: _photoBase64 == null ? const Icon(Icons.add_a_photo_rounded, size: 32) : null,
+                                ),
+                              ),
+                            ),
+                            if (_photoBase64 != null)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 8)],
+                                  ),
+                                  child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -283,17 +336,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
 
                       // Register button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleRegister,
-                        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                        child:
-                            _isLoading
-                                ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-                                )
-                                : const Text('Criar Conta'),
+                      Container(
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleRegister,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child:
+                              _isLoading
+                                  ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                  : const Text(
+                                    'Criar Conta',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                  ),
+                        ),
                       ),
                       const SizedBox(height: 16),
 
