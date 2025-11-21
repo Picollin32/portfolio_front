@@ -38,15 +38,16 @@ class _AdminScreenState extends State<AdminScreen> {
 
   List<User> get _filteredUsers {
     final query = _searchQuery.trim().toLowerCase();
-    final queryFiltered = query.isEmpty
-        ? _users
-        : _users.where((user) {
-            // Pesquisa por nome, email ou id
-            final id = user.id.toLowerCase();
-            final name = user.name.toLowerCase();
-            final email = user.email.toLowerCase();
-            return id.contains(query) || name.contains(query) || email.contains(query);
-          }).toList();
+    final queryFiltered =
+        query.isEmpty
+            ? _users
+            : _users.where((user) {
+              // Pesquisa por nome, email ou id
+              final id = user.id.toLowerCase();
+              final name = user.name.toLowerCase();
+              final email = user.email.toLowerCase();
+              return id.contains(query) || name.contains(query) || email.contains(query);
+            }).toList();
 
     if (_roleFilter == 'all') return queryFiltered;
 
@@ -73,7 +74,7 @@ class _AdminScreenState extends State<AdminScreen> {
           (context) => AlertDialog(
             title: const Text('Confirmar Exclusão'),
             content: Text(
-              'Tem certeza que deseja excluir o usuário "${user.name}"?\n\n'
+              'Tem certeza que deseja excluir o usuário "${user.name.length > 50 ? '${user.name.substring(0, 50)}...' : user.name}"?\n\n'
               'Esta ação não pode ser desfeita.',
             ),
             actions: [
@@ -112,7 +113,11 @@ class _AdminScreenState extends State<AdminScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('Redefinir Senha - ${user.name}'),
+            title: Text(
+              'Redefinir Senha - ${user.name.length > 30 ? '${user.name.substring(0, 30)}...' : user.name}',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +180,10 @@ class _AdminScreenState extends State<AdminScreen> {
     final currentUser = authProvider.user;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Painel Admin')),
+      appBar: AppBar(
+        title: const Text('Painel Admin'),
+        automaticallyImplyLeading: false, // Remove o botão de voltar
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 800;
@@ -234,36 +242,81 @@ class _AdminScreenState extends State<AdminScreen> {
                     // Stats Cards (Row on wide, Grid on small)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: isWide
-                          ? SizedBox(
-                              height: 96,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                      child:
+                          isWide
+                              ? SizedBox(
+                                height: 96,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatCard(
+                                        context,
+                                        'Total de Usuários',
+                                        _users.length.toString(),
+                                        Icons.people,
+                                        Colors.blue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildStatCard(
+                                        context,
+                                        'Filtrados',
+                                        _filteredUsers.length.toString(),
+                                        Icons.filter_list,
+                                        Colors.green,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildStatCard(
+                                        context,
+                                        'Admins',
+                                        _users.where((u) => u.role.name.toLowerCase() == 'admin').length.toString(),
+                                        Icons.admin_panel_settings,
+                                        Colors.purple,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildStatCard(
+                                        context,
+                                        'Usuários',
+                                        _users.where((u) => u.role.name.toLowerCase() == 'user').length.toString(),
+                                        Icons.person,
+                                        Colors.orange,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : GridView.count(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 3,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
                                 children: [
-                                  Expanded(child: _buildStatCard(context, 'Total de Usuários', _users.length.toString(), Icons.people, Colors.blue)),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: _buildStatCard(context, 'Filtrados', _filteredUsers.length.toString(), Icons.filter_list, Colors.green)),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: _buildStatCard(context, 'Admins', _users.where((u) => u.role.name.toLowerCase() == 'admin').length.toString(), Icons.admin_panel_settings, Colors.purple)),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: _buildStatCard(context, 'Usuários', _users.where((u) => u.role.name.toLowerCase() == 'user').length.toString(), Icons.person, Colors.orange)),
+                                  _buildStatCard(context, 'Total de Usuários', _users.length.toString(), Icons.people, Colors.blue),
+                                  _buildStatCard(context, 'Filtrados', _filteredUsers.length.toString(), Icons.filter_list, Colors.green),
+                                  _buildStatCard(
+                                    context,
+                                    'Admins',
+                                    _users.where((u) => u.role.name.toLowerCase() == 'admin').length.toString(),
+                                    Icons.admin_panel_settings,
+                                    Colors.purple,
+                                  ),
+                                  _buildStatCard(
+                                    context,
+                                    'Usuários',
+                                    _users.where((u) => u.role.name.toLowerCase() == 'user').length.toString(),
+                                    Icons.person,
+                                    Colors.orange,
+                                  ),
                                 ],
                               ),
-                            )
-                          : GridView.count(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 3,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              children: [
-                                _buildStatCard(context, 'Total de Usuários', _users.length.toString(), Icons.people, Colors.blue),
-                                _buildStatCard(context, 'Filtrados', _filteredUsers.length.toString(), Icons.filter_list, Colors.green),
-                                _buildStatCard(context, 'Admins', _users.where((u) => u.role.name.toLowerCase() == 'admin').length.toString(), Icons.admin_panel_settings, Colors.purple),
-                                _buildStatCard(context, 'Usuários', _users.where((u) => u.role.name.toLowerCase() == 'user').length.toString(), Icons.person, Colors.orange),
-                              ],
-                            ),
                     ),
 
                     // Users List
@@ -381,13 +434,25 @@ class _AdminScreenState extends State<AdminScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(
+                    user.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(Icons.email, size: 14, color: Colors.grey),
                       const SizedBox(width: 6),
-                      Expanded(child: Text(user.email, style: const TextStyle(fontSize: 13, color: Color.fromARGB(221, 255, 255, 255)))),
+                      Expanded(
+                        child: Text(
+                          user.email,
+                          style: const TextStyle(fontSize: 13, color: Color.fromARGB(221, 255, 255, 255)),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -403,7 +468,14 @@ class _AdminScreenState extends State<AdminScreen> {
                           style: TextStyle(fontSize: 12, color: chipColor.withOpacity(0.9), fontWeight: FontWeight.bold),
                         ),
                       ),
-                      if (user.id.isNotEmpty) Chip(label: Text('ID: ${user.id}')),
+                      if (user.id.isNotEmpty)
+                        Container(
+                          constraints: const BoxConstraints(maxWidth: 150),
+                          child: Chip(
+                            label: Text('ID: ${user.id}', overflow: TextOverflow.ellipsis, maxLines: 1),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
                     ],
                   ),
                 ],

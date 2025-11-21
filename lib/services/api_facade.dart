@@ -193,10 +193,10 @@ class ApiFacade {
   // Media Management Operations
   // ========================================
 
-  /// Busca todas as mídias
-  Future<ApiResponse<List<dynamic>>> getAllMidias({String? tipo, String? status}) async {
+  /// Busca todas as mídias (requer autenticação)
+  Future<ApiResponse<List<dynamic>>> getAllMidias({required String token, String? tipo, String? status}) async {
     try {
-      final result = await ApiService.getAllMidias(tipo: tipo, status: status);
+      final result = await ApiService.getAllMidias(token: token, tipo: tipo, status: status);
 
       if (result['success'] == true) {
         final List<dynamic> midiasData = result['data'];
@@ -209,8 +209,9 @@ class ApiFacade {
     }
   }
 
-  /// Cria uma nova mídia
+  /// Cria uma nova mídia (requer autenticação)
   Future<ApiResponse<dynamic>> createMidia({
+    required String token,
     required String titulo,
     required String tipo,
     String? genero,
@@ -221,6 +222,7 @@ class ApiFacade {
   }) async {
     try {
       final result = await ApiService.createMidia(
+        token: token,
         titulo: titulo,
         tipo: tipo,
         genero: genero,
@@ -240,8 +242,9 @@ class ApiFacade {
     }
   }
 
-  /// Atualiza uma mídia
+  /// Atualiza uma mídia (requer autenticação)
   Future<ApiResponse<dynamic>> updateMidia({
+    required String token,
     required int midiaId,
     String? titulo,
     String? tipo,
@@ -253,6 +256,7 @@ class ApiFacade {
   }) async {
     try {
       final result = await ApiService.updateMidia(
+        token: token,
         midiaId: midiaId,
         titulo: titulo,
         tipo: tipo,
@@ -273,10 +277,10 @@ class ApiFacade {
     }
   }
 
-  /// Deleta uma mídia
-  Future<ApiResponse<void>> deleteMidia(int midiaId) async {
+  /// Deleta uma mídia (requer autenticação)
+  Future<ApiResponse<void>> deleteMidia(String token, int midiaId) async {
     try {
-      final result = await ApiService.deleteMidia(midiaId);
+      final result = await ApiService.deleteMidia(token, midiaId);
 
       if (result['success'] == true) {
         return ApiResponse.success(null);

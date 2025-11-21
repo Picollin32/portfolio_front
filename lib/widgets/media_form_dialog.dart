@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io' show File;
 import 'dart:typed_data' show Uint8List;
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image/image.dart' as img;
 import '../models/media_item_model.dart';
 import '../utils/api_service.dart';
+import '../providers/media_provider.dart';
 
 class MediaFormDialog extends StatefulWidget {
   final MediaItem? media;
@@ -154,60 +156,43 @@ class _MediaFormDialogState extends State<MediaFormDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // Converte MediaType para string em português
-      String tipoString;
-      switch (_selectedType!) {
-        case MediaType.game:
-          tipoString = 'Jogo';
-          break;
-        case MediaType.movie:
-          tipoString = 'Filme';
-          break;
-        case MediaType.series:
-          tipoString = 'Série';
-          break;
-      }
+      final mediaProvider = Provider.of<MediaProvider>(context, listen: false);
+
+      // Cria o objeto MediaItem
+      final mediaItem = MediaItem(
+        id: widget.media?.id ?? 0,
+        title: _titleController.text.trim(),
+        type: _selectedType!,
+        genre: _genreController.text.trim().isNotEmpty ? _genreController.text.trim() : null,
+        year: _yearController.text.trim().isNotEmpty ? int.tryParse(_yearController.text.trim()) : null,
+        status: _selectedBadge != 'Nenhum' ? _selectedBadge : null,
+        rating: _rating,
+        image: _imageController.text.trim().isNotEmpty ? _imageController.text.trim() : '',
+      );
 
       if (widget.media == null) {
         // CRIAR nova mídia
-        final result = await ApiService.createMidia(
-          titulo: _titleController.text.trim(),
-          tipo: tipoString,
-          genero: _genreController.text.trim().isNotEmpty ? _genreController.text.trim() : null,
-          ano: _yearController.text.trim().isNotEmpty ? int.tryParse(_yearController.text.trim()) : null,
-          status: _selectedBadge != 'Nenhum' ? _selectedBadge : null,
-          avaliacao: _rating,
-          capa: _imageController.text.trim().isNotEmpty ? _imageController.text.trim() : null,
-        );
+        final result = await mediaProvider.create(mediaItem);
 
-        if (result['success'] == true) {
+        if (result != null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Mídia criada com sucesso!')));
             Navigator.of(context).pop(true); // Retorna true para indicar sucesso
           }
         } else {
-          throw Exception(result['error'] ?? 'Erro ao criar mídia');
+          throw Exception(mediaProvider.error ?? 'Erro ao criar mídia');
         }
       } else {
         // ATUALIZAR mídia existente
-        final result = await ApiService.updateMidia(
-          midiaId: widget.media!.id,
-          titulo: _titleController.text.trim(),
-          tipo: tipoString,
-          genero: _genreController.text.trim().isNotEmpty ? _genreController.text.trim() : null,
-          ano: _yearController.text.trim().isNotEmpty ? int.tryParse(_yearController.text.trim()) : null,
-          status: _selectedBadge != 'Nenhum' ? _selectedBadge : null,
-          avaliacao: _rating,
-          capa: _imageController.text.trim().isNotEmpty ? _imageController.text.trim() : null,
-        );
+        final result = await mediaProvider.update(widget.media!.id, mediaItem);
 
-        if (result['success'] == true) {
+        if (result != null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Mídia atualizada com sucesso!')));
             Navigator.of(context).pop(true); // Retorna true para indicar sucesso
           }
         } else {
-          throw Exception(result['error'] ?? 'Erro ao atualizar mídia');
+          throw Exception(mediaProvider.error ?? 'Erro ao atualizar mídia');
         }
       }
     } catch (e) {

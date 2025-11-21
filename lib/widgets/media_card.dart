@@ -178,7 +178,7 @@ class _MediaCardState extends State<MediaCard> with SingleTickerProviderStateMix
                                   style: Theme.of(
                                     context,
                                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, fontSize: 13, height: 1.2),
-                                  maxLines: 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 6),

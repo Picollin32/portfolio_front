@@ -37,7 +37,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       builder:
           (context) => AlertDialog(
             title: const Text('Confirmar Exclusão'),
-            content: Text('Deseja realmente excluir "${media.title}"?'),
+            content: Text('Deseja realmente excluir "${media.title.length > 50 ? '${media.title.substring(0, 50)}...' : media.title}"?'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
               ElevatedButton(
@@ -54,7 +54,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
       try {
         await mediaProvider.delete(media.id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ "${media.title}" excluída com sucesso')));
+          final displayTitle = media.title.length > 30 ? '${media.title.substring(0, 30)}...' : media.title;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ "$displayTitle" excluída com sucesso')));
         }
       } catch (e) {
         if (context.mounted) {

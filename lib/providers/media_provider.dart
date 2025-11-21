@@ -6,23 +6,37 @@ class MediaProvider with ChangeNotifier {
   List<MediaItem> _items = [];
   bool _isLoading = false;
   String? _error;
+  String? _token; // Token JWT para autenticação
 
   List<MediaItem> get items => _items;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  MediaProvider() {
-    loadFromApi();
+  MediaProvider();
+
+  /// Define o token de autenticação
+  void setToken(String? token) {
+    _token = token;
+    if (token != null) {
+      loadFromApi(); // Recarrega dados quando o token é definido
+    }
   }
 
-  /// Carrega todas as mídias da API
+  /// Carrega todas as mídias da API (requer autenticação)
   Future<void> loadFromApi({String? tipo, String? status}) async {
+    if (_token == null) {
+      _error = 'Usuário não autenticado';
+      debugPrint('❌ Token não disponível');
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final result = await ApiService.getAllMidias(tipo: tipo, status: status);
+      final result = await ApiService.getAllMidias(token: _token!, tipo: tipo, status: status);
 
       if (result['success'] == true) {
         final List<dynamic> data = result['data'];
@@ -57,12 +71,19 @@ class MediaProvider with ChangeNotifier {
     return _items.where((item) => item.type == type).toList();
   }
 
-  /// Cria uma nova mídia na API
+  /// Cria uma nova mídia na API (requer autenticação)
   Future<MediaItem?> create(MediaItem item) async {
+    if (_token == null) {
+      _error = 'Usuário não autenticado';
+      debugPrint('❌ Token não disponível');
+      return null;
+    }
+
     try {
       final jsonData = item.toJson();
 
       final result = await ApiService.createMidia(
+        token: _token!,
         titulo: jsonData['titulo'],
         tipo: jsonData['tipo'],
         genero: jsonData['genero'],
@@ -89,12 +110,19 @@ class MediaProvider with ChangeNotifier {
     }
   }
 
-  /// Atualiza uma mídia na API
+  /// Atualiza uma mídia na API (requer autenticação)
   Future<MediaItem?> update(int id, MediaItem updates) async {
+    if (_token == null) {
+      _error = 'Usuário não autenticado';
+      debugPrint('❌ Token não disponível');
+      return null;
+    }
+
     try {
       final jsonData = updates.toJson();
 
       final result = await ApiService.updateMidia(
+        token: _token!,
         midiaId: id,
         titulo: jsonData['titulo'],
         tipo: jsonData['tipo'],
@@ -125,10 +153,16 @@ class MediaProvider with ChangeNotifier {
     }
   }
 
-  /// Deleta uma mídia na API
+  /// Deleta uma mídia na API (requer autenticação)
   Future<bool> delete(int id) async {
+    if (_token == null) {
+      _error = 'Usuário não autenticado';
+      debugPrint('❌ Token não disponível');
+      return false;
+    }
+
     try {
-      final result = await ApiService.deleteMidia(id);
+      final result = await ApiService.deleteMidia(_token!, id);
 
       if (result['success'] == true) {
         _items.removeWhere((item) => item.id == id);

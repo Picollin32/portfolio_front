@@ -9,8 +9,27 @@ import '../widgets/protected_route.dart';
 import '../widgets/media_form_dialog.dart';
 import '../widgets/user_avatar.dart';
 
-class PortfolioScreen extends StatelessWidget {
+class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
+
+  @override
+  State<PortfolioScreen> createState() => _PortfolioScreenState();
+}
+
+class _PortfolioScreenState extends State<PortfolioScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Configura o token no MediaProvider após o primeiro frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final mediaProvider = Provider.of<MediaProvider>(context, listen: false);
+
+      if (authProvider.token != null) {
+        mediaProvider.setToken(authProvider.token);
+      }
+    });
+  }
 
   void _showMediaDialog(BuildContext context, MediaItem? media) async {
     final result = await showDialog(context: context, builder: (context) => MediaFormDialog(media: media));
@@ -28,7 +47,7 @@ class PortfolioScreen extends StatelessWidget {
       builder:
           (context) => AlertDialog(
             title: const Text('Confirmar Exclusão'),
-            content: Text('Deseja realmente excluir "${media.title}"?'),
+            content: Text('Deseja realmente excluir "${media.title.length > 50 ? '${media.title.substring(0, 50)}...' : media.title}"?'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
               ElevatedButton(
@@ -45,7 +64,8 @@ class PortfolioScreen extends StatelessWidget {
       try {
         await mediaProvider.delete(media.id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ "${media.title}" excluída com sucesso')));
+          final displayTitle = media.title.length > 30 ? '${media.title.substring(0, 30)}...' : media.title;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ "$displayTitle" excluída com sucesso')));
         }
       } catch (e) {
         if (context.mounted) {

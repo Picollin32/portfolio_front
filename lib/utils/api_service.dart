@@ -297,8 +297,8 @@ class ApiService {
   // MEDIA ENDPOINTS - Mídias (Jogos, Filmes, Séries)
   // ============================================
 
-  /// Lista todas as mídias
-  static Future<Map<String, dynamic>> getAllMidias({String? tipo, String? status}) async {
+  /// Lista todas as mídias (requer autenticação)
+  static Future<Map<String, dynamic>> getAllMidias({required String token, String? tipo, String? status}) async {
     try {
       print('🎮 Buscando todas as mídias');
 
@@ -312,7 +312,7 @@ class ApiService {
 
       print('🌐 URL: $url');
 
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 10));
+      final response = await http.get(Uri.parse(url), headers: _authHeaders(token)).timeout(const Duration(seconds: 10));
 
       print('📡 Status da resposta: ${response.statusCode}');
 
@@ -329,13 +329,15 @@ class ApiService {
     }
   }
 
-  /// Busca uma mídia por ID
-  static Future<Map<String, dynamic>> getMidiaById(int midiaId) async {
+  /// Busca uma mídia por ID (requer autenticação)
+  static Future<Map<String, dynamic>> getMidiaById(String token, int midiaId) async {
     try {
       print('🎮 Buscando mídia ID: $midiaId');
       print('🌐 URL: $baseUrl/midias/$midiaId');
 
-      final response = await http.get(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(Uri.parse('$baseUrl/midias/$midiaId'), headers: _authHeaders(token))
+          .timeout(const Duration(seconds: 10));
 
       print('📡 Status da resposta: ${response.statusCode}');
 
@@ -354,8 +356,9 @@ class ApiService {
     }
   }
 
-  /// Cria uma nova mídia
+  /// Cria uma nova mídia (requer autenticação)
   static Future<Map<String, dynamic>> createMidia({
+    required String token,
     required String titulo,
     required String tipo,
     String? genero,
@@ -379,7 +382,7 @@ class ApiService {
       };
 
       final response = await http
-          .post(Uri.parse('$baseUrl/midias/'), headers: _headers, body: jsonEncode(body))
+          .post(Uri.parse('$baseUrl/midias/'), headers: _authHeaders(token), body: jsonEncode(body))
           .timeout(const Duration(seconds: 10));
 
       print('📡 Status da resposta: ${response.statusCode}');
@@ -402,8 +405,9 @@ class ApiService {
     }
   }
 
-  /// Atualiza uma mídia
+  /// Atualiza uma mídia (requer autenticação)
   static Future<Map<String, dynamic>> updateMidia({
+    required String token,
     required int midiaId,
     String? titulo,
     String? tipo,
@@ -427,7 +431,7 @@ class ApiService {
       if (capa != null) body['capa'] = capa;
 
       final response = await http
-          .put(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers, body: jsonEncode(body))
+          .put(Uri.parse('$baseUrl/midias/$midiaId'), headers: _authHeaders(token), body: jsonEncode(body))
           .timeout(const Duration(seconds: 10));
 
       print('📡 Status da resposta: ${response.statusCode}');
@@ -451,13 +455,15 @@ class ApiService {
     }
   }
 
-  /// Deleta uma mídia
-  static Future<Map<String, dynamic>> deleteMidia(int midiaId) async {
+  /// Deleta uma mídia (requer autenticação)
+  static Future<Map<String, dynamic>> deleteMidia(String token, int midiaId) async {
     try {
       print('🗑️ Deletando mídia ID: $midiaId');
       print('🌐 URL: $baseUrl/midias/$midiaId');
 
-      final response = await http.delete(Uri.parse('$baseUrl/midias/$midiaId'), headers: _headers).timeout(const Duration(seconds: 10));
+      final response = await http
+          .delete(Uri.parse('$baseUrl/midias/$midiaId'), headers: _authHeaders(token))
+          .timeout(const Duration(seconds: 10));
 
       print('📡 Status da resposta: ${response.statusCode}');
 
