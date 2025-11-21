@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class Config {
   // URLs da API
   static const String _apiUrlDev = 'http://localhost:8000';
-  static const String _apiUrlProd = 'https://portfolio-api-docker.onrender.com';
+  static const String _apiUrlProd = 'https://portifiolio-api-docker.onrender.com';
 
   // Detecção automática de ambiente
   static bool get isProduction => kReleaseMode;
